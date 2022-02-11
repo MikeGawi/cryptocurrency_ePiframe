@@ -32,7 +32,7 @@ OR
 
 ## Configuration
 
-* Configure with the file [*config.cfg*](https://github.com/MikeGawi/Cryptocurrency-ePiframe/blob/master/config.cfg) inside */<ePiframe path/>/plugins/Cryptocurrency-ePiframe*
+* Configure with the file [*config.cfg*](https://github.com/MikeGawi/Cryptocurrency-ePiframe/blob/master/config.cfg) inside *ePiframe_path/plugins/Cryptocurrency-ePiframe*
 
 OR
 
