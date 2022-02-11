@@ -1,4 +1,4 @@
-<img align="right" src="https://github.com/MikeGawi/Cryptocurrency-ePiframe/blob/master/assets/curr.gif" width="400">
+<img align="right" src="https://github.com/MikeGawi/cryptocurrency-ePiframe/blob/master/assets/curr.gif" width="400">
 
 # Cryptocurrency-ePiframe
 
@@ -16,7 +16,7 @@ On working ePiframe:
 * Clone to ePiframe plugins path:
 	```
 	cd <ePiframe path>/plugins
-	git clone https://github.com/MikeGawi/Cryptocurrency-ePiframe Cryptocurrency-ePiframe
+	git clone https://github.com/MikeGawi/cryptocurrency-ePiframe cryptocurrency-ePiframe
 	```
 
 OR
@@ -24,16 +24,16 @@ OR
 * Download and extract:
 	```
 	cd <ePiframe path>/plugins
-	wget -q https://github.com/MikeGawi/Cryptocurrency-ePiframe/archive/master.zip -O Cryptocurrency-ePiframe.zip
-	unzip Cryptocurrency-ePiframe.zip
-	mv Cryptocurrency-ePiframe-master Cryptocurrency-ePiframe
-	rm Cryptocurrency-ePiframe.zip
+	wget -q https://github.com/MikeGawi/cryptocurrency-ePiframe/archive/master.zip -O cryptocurrency-ePiframe.zip
+	unzip cryptocurrency-ePiframe.zip
+	mv cryptocurrency-ePiframe-master cryptocurrency-ePiframe
+	rm cryptocurrency-ePiframe.zip
 	```
 
 ## Configuration
 
-* Configure with the file [*config.cfg*](https://github.com/MikeGawi/Cryptocurrency-ePiframe/blob/master/config.cfg) inside *ePiframe_path/plugins/Cryptocurrency-ePiframe*
+* Configure with the file [*config.cfg*](https://github.com/MikeGawi/cryptocurrency-ePiframe/blob/master/config.cfg) inside *ePiframe_path/plugins/cryptocurrency-ePiframe*
 
 OR
 
-* In ePiframe WebUI (if enabled) under *Plugins - Cryptocurrency-ePiframe*
+* In ePiframe WebUI (if enabled) under *Plugins - cryptocurrency-ePiframe*
