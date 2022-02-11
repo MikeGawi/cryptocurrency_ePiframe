@@ -1,3 +1,5 @@
+<img align="right" src="https://github.com/MikeGawi/Cryptocurrency-ePiframe/blob/master/assets/curr.gif" width="400">
+
 # Cryptocurrency-ePiframe
 
 Plugin that displays cryptocurrency price and percentage change on [ePiframe](https://github.com/MikeGawi/ePiframe)
@@ -6,7 +8,6 @@ This plugin has been created with [ePiframe-plugin](https://github.com/MikeGawi/
 
 It uses free [CoinGecko Crypto API](https://www.coingecko.com/en/api).
 
-<img align="right" src="https://github.com/MikeGawi/Cryptocurrency-ePiframe/blob/master/assets/curr.gif" width="400">
 
 ## Installation
 
