@@ -8,7 +8,7 @@ is_enabled=0
 # on api.coingecko.com/api/v3/coins/list.
 # Examples: bitcoin, dogecoin, ethereum, etc.
 # Default: bitcoin
-crtyptocurrency=bitcoin
+cryptocurrency=bitcoin
 
 # Target currency name.
 # Examples: usd, gbp, eur, pln.

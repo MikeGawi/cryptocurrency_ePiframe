@@ -34,7 +34,7 @@ class plugin(pluginbase):
 		def load_settings(self):
 			self.SETTINGS = [
 				configprop('is_enabled', self, prop_type=configprop.BOOLEAN_TYPE),
-				configprop('crtyptocurrency', self, dependency='is_enabled'),
+				configprop('cryptocurrency', self, dependency='is_enabled'),
 				configprop('target_currency', self, dependency='is_enabled'),
 				configprop('show_percentage', self, prop_type=configprop.BOOLEAN_TYPE, dependency='is_enabled'),
 				configprop('position', self, dependency='is_enabled', prop_type=configprop.INTEGER_TYPE, possible=self.main_class.get_positions()),
@@ -62,47 +62,44 @@ class plugin(pluginbase):
 		return ret.json() if ret else None
 		
 	def __send_request (self, baseurl, timeout):
-		url = baseurl.format(self.config.get('crtyptocurrency').lower(), self.config.get('target_currency').lower())
+		url = baseurl.format(self.config.get('cryptocurrency').lower(), self.config.get('target_currency').lower())
 		self.__data = self.__get_response_json(url, timeout)
 	
 	#Overwriting only postprocess method
 	def postprocess_photo (self, finalphoto, width, height, is_horizontal, convertmgr):
 		self.__send_request(self.__BASE_URL, constants.CHECK_CONNECTION_TIMEOUT) #getting request from API with timeout
 		if self.__data:
-			try:
-				name = self.__data[0]['symbol']	#parsing JSON data
-				price = format(float(self.__data[0]['current_price']), '.2f')
-				perc = format(float(self.__data[0]['price_change_percentage_24h']), '.2f')
+			name = self.__data[0]['symbol']	#parsing JSON data
+			price = format(float(self.__data[0]['current_price']), '.2f')
+			perc = format(float(self.__data[0]['price_change_percentage_24h']), '.2f')
 
-				image = Image.open(finalphoto)
-				if not is_horizontal: image = image.transpose(Image.ROTATE_90 if self.globalconfig.getint('rotation') == 90 else Image.ROTATE_270) #rotating image if frame not in horizontal position
-				draw = ImageDraw.Draw(image)
-				font = ImageFont.truetype('static/fonts/NotoSans-SemiCondensed.ttf', self.config.getint('font')) #existing ePiframe font is loaded
+			image = Image.open(finalphoto)
+			if not is_horizontal: image = image.transpose(Image.ROTATE_90 if self.globalconfig.getint('rotation') == 90 else Image.ROTATE_270) #rotating image if frame not in horizontal position
+			draw = ImageDraw.Draw(image)
+			font = ImageFont.truetype('static/fonts/NotoSans-SemiCondensed.ttf', self.config.getint('font')) #existing ePiframe font is loaded
 
-				wid, hei = image.size
+			wid, hei = image.size
 
-				text = "{}:{}{}".format(name.upper(), price, (' (' + ('+' if float(perc) > 0 else '') + perc + "%)") if bool(self.config.getint('show_percentage')) else '')
-				size = draw.textlength(text, font = font) #calculating text width
+			text = "{}:{}{}".format(name.upper(), price, (' (' + ('+' if float(perc) > 0 else '') + perc + "%)") if bool(self.config.getint('show_percentage')) else '')
+			size = draw.textlength(text, font = font) #calculating text width
 
-				x = self.__MARGIN
-				y = self.__MARGIN
+			x = self.__MARGIN
+			y = self.__MARGIN
 
-				if self.config.getint('position') in [1, 3]:
-					x = wid - size - self.__MARGIN
+			if self.config.getint('position') in [1, 3]:
+				x = wid - size - self.__MARGIN
 
-				if self.config.getint('position') in [2, 3]:
-					y = hei - self.__MARGIN - self.config.getint('font')
+			if self.config.getint('position') in [2, 3]:
+				y = hei - self.__MARGIN - self.config.getint('font')
 
-				fillcolor = self.__COLORS[self.config.get('font_color').upper()] #getting fill and stroke colors...
-				strokecolor = (self.__COLORS['WHITE'] + self.__COLORS['BLACK']) - fillcolor
+			fillcolor = self.__COLORS[self.config.get('font_color').upper()] #getting fill and stroke colors...
+			strokecolor = (self.__COLORS['WHITE'] + self.__COLORS['BLACK']) - fillcolor
 
-				stroke = ImageColor.getcolor({value:key for key, value in self.__COLORS.items()}[strokecolor], image.mode) #...according to the timage mode (can be black & white)
-				fill = ImageColor.getcolor(self.config.get('font_color'), image.mode)
+			stroke = ImageColor.getcolor({value:key for key, value in self.__COLORS.items()}[strokecolor], image.mode) #...according to the timage mode (can be black & white)
+			fill = ImageColor.getcolor(self.config.get('font_color'), image.mode)
 
-				draw.text((x, y), text, font = font, fill = fill, stroke_width=2, stroke_fill=stroke) #drawing text
+			draw.text((x, y), text, font = font, fill = fill, stroke_width=2, stroke_fill=stroke) #drawing text
 
-				if not is_horizontal: image = image.transpose(Image.ROTATE_270 if self.globalconfig.getint('rotation') == 90 else Image.ROTATE_90) #rotating back if in vertical position
+			if not is_horizontal: image = image.transpose(Image.ROTATE_270 if self.globalconfig.getint('rotation') == 90 else Image.ROTATE_90) #rotating back if in vertical position
 
-				image.save(finalphoto) #saving as final photo
-			except Exception:
-				pass
+			image.save(finalphoto) #saving as final photo
