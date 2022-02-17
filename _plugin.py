@@ -23,9 +23,6 @@ class plugin(pluginbase):
 		'BLACK' : 		0
 	}
 		
-	__ERROR_VALUE_TEXT = 'Configuration position should be one of {}'
-	__ERROR_CVALUE_TEXT = 'Configuration font_color should be one of {}'
-	
 	__BASE_URL = "https://api.coingecko.com/api/v3/coins/markets?ids={}&vs_currency={}"
 	
 	class configmgr (configbase):
@@ -95,7 +92,7 @@ class plugin(pluginbase):
 			fillcolor = self.__COLORS[self.config.get('font_color').upper()] #getting fill and stroke colors...
 			strokecolor = (self.__COLORS['WHITE'] + self.__COLORS['BLACK']) - fillcolor
 
-			stroke = ImageColor.getcolor({value:key for key, value in self.__COLORS.items()}[strokecolor], image.mode) #...according to the timage mode (can be black & white)
+			stroke = ImageColor.getcolor({value:key for key, value in self.__COLORS.items()}[strokecolor], image.mode) #...according to the image mode (can be black & white)
 			fill = ImageColor.getcolor(self.config.get('font_color'), image.mode)
 
 			draw.text((x, y), text, font = font, fill = fill, stroke_width=2, stroke_fill=stroke) #drawing text
