@@ -63,7 +63,7 @@ class plugin(pluginbase):
 		self.__data = self.__get_response_json(url, timeout)
 	
 	#Overwriting only postprocess method
-	def postprocess_photo (self, finalphoto, width, height, is_horizontal, convertmgr):
+	def postprocess_photo (self, finalphoto, width, height, is_horizontal, convertmgr, photo, idlabel, creationlabel, sourcelabel):
 		self.__send_request(self.__BASE_URL, constants.CHECK_CONNECTION_TIMEOUT) #getting request from API with timeout
 		if self.__data:
 			name = self.__data[0]['symbol']	#parsing JSON data
