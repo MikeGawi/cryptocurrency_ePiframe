@@ -11,7 +11,7 @@ class plugin(pluginbase):
 	name = 'Cryptocurrency'
 	author = 'MikeGawi'
 	description = 'Displays cryptocurrency price and percentage change on frame'
-	site = 'https://github.com/MikeGawi/Cryptocurrency-ePiframe'
+	site = 'https://github.com/MikeGawi/Cryptocurrency_ePiframe'
 	info = 'Uses free API from https://www.coingecko.com/'
 	
 	__MARGIN = 10
