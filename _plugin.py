@@ -1,178 +1,135 @@
-from modules.base.pluginbase import PluginBase
-from modules.base.configbase import ConfigBase
-from misc.configproperty import ConfigProperty
-from misc.constants import Constants
-from PIL import Image, ImageDraw, ImageFont, ImageColor
-from misc.logs import Logs
-from modules.convertmanager import ConvertManager
-from modules.pidmanager import PIDManager
+"""Cryptocurrency_ePiframe: cryptocurrency price on the photo (ePiframe Plugin API v2).
+
+The price (and its 24 h change) comes from the free CoinGecko API and is drawn in
+a corner of the converted photo (``postprocess_photo``). Without the price (no
+network, API limit) the photo is shown without it.
+"""
+
+from dataclasses import dataclass
+from typing import Any
+
 import requests
+from PIL import Image, ImageColor, ImageDraw, ImageFont
+
+from epiframe.config.property import ConfigProperty, PropertyType
+from epiframe.plugins.base import PhotoFile
+from epiframe.plugins.base import Plugin as PluginBase
+from epiframe.weather.stamp import TEXT_FONT  # the font ePiframe uses for its stamps
+
+API_URL = "https://api.coingecko.com/api/v3/coins/markets"
+TIMEOUT = 5  # seconds
+MARGIN = 10  # pixels from the photo edge
+STROKE_WIDTH = 2
+POSITIONS = [0, 1, 2, 3]  # left-top, right-top, left-bottom, right-bottom
+COLORS = ["white", "black"]  # the outline has the other one
+
+
+@dataclass(frozen=True)
+class Price:
+    symbol: str
+    price: float
+    change: float | None  # percent in 24 h (CoinGecko may not know it)
+
+
+def fetch_price(coin: str, currency: str) -> Price:
+    """Current price of ``coin`` in ``currency``; raises on any problem."""
+    response = requests.get(
+        API_URL,
+        params={"ids": coin.lower(), "vs_currency": currency.lower()},
+        timeout=TIMEOUT,
+    )
+    response.raise_for_status()
+    data: Any = response.json()
+    if not data:
+        raise ValueError(f"unknown cryptocurrency {coin!r} or currency {currency!r}")
+    market = data[0]
+    change = market.get("price_change_percentage_24h")
+    return Price(
+        str(market["symbol"]),
+        float(market["current_price"]),
+        None if change is None else float(change),
+    )
+
+
+def price_text(price: Price, show_change: bool) -> str:
+    """E.g. ``BTC:43210.50 (+1.25%)``."""
+    text = f"{price.symbol.upper()}:{price.price:.2f}"
+    if show_change and price.change is not None:
+        sign = "+" if price.change > 0 else ""  # negative values have their "-"
+        text += f" ({sign}{price.change:.2f}%)"
+    return text
 
 
 class Plugin(PluginBase):
-
     name = "Cryptocurrency"
     author = "MikeGawi"
     description = "Displays cryptocurrency price and percentage change on frame"
-    site = "https://github.com/MikeGawi/Cryptocurrency_ePiframe"
+    site = "https://github.com/MikeGawi/cryptocurrency_ePiframe"
     info = "Uses free API from https://www.coingecko.com/"
 
-    __MARGIN = 10
-    __POSITION_VALUES = [0, 1, 2, 3]
-    __COLORS = {"WHITE": 255, "BLACK": 0}
-    __BASE_URL = "https://api.coingecko.com/api/v3/coins/markets?ids={}&vs_currency={}"
+    def settings(self) -> list[ConfigProperty]:
+        # all entries are used only when the plugin is enabled
+        return [
+            *super().settings(),  # is_enabled
+            ConfigProperty("cryptocurrency", dependency="is_enabled"),
+            ConfigProperty("target_currency", dependency="is_enabled"),
+            ConfigProperty(
+                "show_percentage", PropertyType.BOOLEAN, dependency="is_enabled"
+            ),
+            ConfigProperty(
+                "position",
+                PropertyType.INTEGER,
+                possible=POSITIONS,
+                dependency="is_enabled",
+            ),
+            ConfigProperty(
+                "font", PropertyType.INTEGER, min_value=8, dependency="is_enabled"
+            ),
+            ConfigProperty("font_color", possible=COLORS, dependency="is_enabled"),
+        ]
 
-    class PluginConfigManager(ConfigBase):
-        # building settings according to config.default file
-        # notice that referring to plugin class is done with self.main_class
-        def load_settings(self):
-            self.SETTINGS = [
-                ConfigProperty(
-                    "is_enabled", self, prop_type=ConfigProperty.BOOLEAN_TYPE
-                ),
-                ConfigProperty("cryptocurrency", self, dependency="is_enabled"),
-                ConfigProperty("target_currency", self, dependency="is_enabled"),
-                ConfigProperty(
-                    "show_percentage",
-                    self,
-                    prop_type=ConfigProperty.BOOLEAN_TYPE,
-                    dependency="is_enabled",
-                ),
-                ConfigProperty(
-                    "position",
-                    self,
-                    dependency="is_enabled",
-                    prop_type=ConfigProperty.INTEGER_TYPE,
-                    possible=self.main_class.get_positions(),
-                ),
-                ConfigProperty(
-                    "font",
-                    self,
-                    dependency="is_enabled",
-                    minvalue=8,
-                    prop_type=ConfigProperty.INTEGER_TYPE,
-                ),
-                ConfigProperty(
-                    "font_color",
-                    self,
-                    dependency="is_enabled",
-                    possible=self.main_class.get_colors(),
-                ),
-            ]
-
-    def __init__(
-        self,
-        path: str,
-        pid_manager: PIDManager,
-        logging: Logs,
-        global_config: ConfigBase,
-    ):
-
-        super().__init__(
-            path, pid_manager, logging, global_config
-        )  # default constructor
-
-    # config possible values methods
-    def get_positions(self):
-        return self.__POSITION_VALUES
-
-    def get_colors(self):
-        return [key.lower() for key in self.__COLORS.keys()]
+    def postprocess_photo(self, photo: PhotoFile) -> None:
+        try:
+            price = fetch_price(
+                self.config.get("cryptocurrency"), self.config.get("target_currency")
+            )
+        except (requests.RequestException, ValueError, KeyError, TypeError) as error:
+            # the photo is still shown, just without the price
+            self.logger.warning(f"No cryptocurrency price: {error}")
+            return
+        text = price_text(price, bool(self.config.getint("show_percentage")))
+        with Image.open(photo.path) as source:
+            image = source.copy()
+        image = self.upright(image, photo, back=False)
+        self.draw(image, text)
+        self.upright(image, photo, back=True).save(photo.path)
 
     @staticmethod
-    def __get_response_json(url: str, timeout: int):
-        try:
-            return_value = requests.get(url, timeout=timeout)
-            return_value.raise_for_status()
-        except requests.ConnectionError:
-            return_value = None
-
-        return return_value.json() if return_value else None
-
-    def __send_request(self, baseurl, timeout):
-        url = baseurl.format(
-            self.config.get("cryptocurrency").lower(),
-            self.config.get("target_currency").lower(),
+    def upright(image: Image.Image, photo: PhotoFile, back: bool) -> Image.Image:
+        # a vertical frame stores the photo turned: draw on the upright photo
+        if photo.horizontal:
+            return image
+        turn_left = (photo.rotation == 90) != back
+        return image.transpose(
+            Image.Transpose.ROTATE_90 if turn_left else Image.Transpose.ROTATE_270
         )
-        self.__data = self.__get_response_json(url, timeout)
 
-    # Overwriting only postprocess method
-    def postprocess_photo(
-        self,
-        final_photo: str,
-        width: int,
-        height: int,
-        is_horizontal: bool,
-        convert_manager: ConvertManager,
-        photo,
-        id_label: str,
-        creation_label: str,
-        source_label: str,
-    ):
-        self.__send_request(
-            self.__BASE_URL, Constants.CHECK_CONNECTION_TIMEOUT
-        )  # getting request from API with timeout
-        if self.__data:
-            name = self.__data[0]["symbol"]  # parsing JSON data
-            price = format(float(self.__data[0]["current_price"]), ".2f")
-            percentage = format(
-                float(self.__data[0]["price_change_percentage_24h"]), ".2f"
-            )
-
-            image = Image.open(final_photo)
-            if not is_horizontal:
-                image = image.transpose(
-                    Image.ROTATE_90
-                    if self.global_config.getint("rotation") == 90
-                    else Image.ROTATE_270
-                )  # rotating image if frame not in horizontal position
-            draw = ImageDraw.Draw(image)
-            font = ImageFont.truetype(
-                "static/fonts/NotoSans-SemiCondensed.ttf", self.config.getint("font")
-            )  # existing ePiframe font is loaded
-
-            image_width, image_height = image.size
-
-            text = "{}:{}{}".format(
-                name.upper(),
-                price,
-                (" (" + ("+" if float(percentage) > 0 else "") + percentage + "%)")
-                if bool(self.config.getint("show_percentage"))
-                else "",
-            )
-            size = draw.textlength(text, font=font)  # calculating text width
-
-            x = self.__MARGIN
-            y = self.__MARGIN
-
-            if self.config.getint("position") in [1, 3]:
-                x = image_width - size - self.__MARGIN
-
-            if self.config.getint("position") in [2, 3]:
-                y = image_height - self.__MARGIN - self.config.getint("font")
-
-            fill_color = self.__COLORS[
-                self.config.get("font_color").upper()
-            ]  # getting fill and stroke colors...
-            stroke_color = (
-                self.__COLORS["WHITE"] + self.__COLORS["BLACK"]
-            ) - fill_color
-
-            stroke = ImageColor.getcolor(
-                {value: key for key, value in self.__COLORS.items()}[stroke_color],
-                image.mode,
-            )  # ...according to the image mode (can be black & white)
-            fill = ImageColor.getcolor(self.config.get("font_color"), image.mode)
-
-            draw.text(
-                (x, y), text, font=font, fill=fill, stroke_width=2, stroke_fill=stroke
-            )  # drawing text
-
-            if not is_horizontal:
-                image = image.transpose(
-                    Image.ROTATE_270
-                    if self.global_config.getint("rotation") == 90
-                    else Image.ROTATE_90
-                )  # rotating back if in vertical position
-
-            image.save(final_photo)  # saving as final photo
+    def draw(self, image: Image.Image, text: str) -> None:
+        size = self.config.getint("font")
+        position = self.config.getint("position")
+        color = self.config.get("font_color")
+        outline = COLORS[1 - COLORS.index(color)]
+        draw = ImageDraw.Draw(image)
+        font = ImageFont.truetype(str(TEXT_FONT), size)
+        width = draw.textlength(text, font=font)
+        x = image.width - width - MARGIN if position in (1, 3) else MARGIN
+        y = image.height - MARGIN - size if position in (2, 3) else MARGIN
+        draw.text(
+            (x, y),
+            text,
+            font=font,
+            # colors in the photo's mode (a black & white photo has no RGB)
+            fill=ImageColor.getcolor(color, image.mode),
+            stroke_width=STROKE_WIDTH,
+            stroke_fill=ImageColor.getcolor(outline, image.mode),
+        )

@@ -9,6 +9,17 @@ This plugin has been created with [ePiframe_plugin](https://github.com/MikeGawi/
 It uses free [CoinGecko Crypto API](https://www.coingecko.com/en/api).
 
 
+## Requirements
+
+* [ePiframe](https://github.com/MikeGawi/ePiframe) 2.0 or newer (Plugin API v2). For ePiframe 1.x use the version
+  of this plugin from before ePiframe 2.0.
+
+## How it works
+
+* The price comes from the free CoinGecko API on every photo change (mind its rate limits with short intervals).
+* Without network or price data the photo is shown without the price (a warning is logged).
+* The text uses the font of ePiframe's weather stamp; position, size and color are configurable.
+
 ## Installation
 
 On working ePiframe:
@@ -36,4 +47,9 @@ OR
 
 OR
 
-* In ePiframe WebUI (if enabled) under *Plugins - cryptocurrency_ePiframe*
+* In ePiframe WebUI (if enabled) under *Plugins - Cryptocurrency*
+
+Check the configuration with `./ePiframe.py --check-config` (in the ePiframe folder).
+
+The plugin folder name must stay a valid Python name (letters, digits, `_`), e.g. `cryptocurrency_ePiframe`: ePiframe
+skips plugins in folders with dashes or dots.
