@@ -49,7 +49,7 @@ OR
 
 * In ePiframe WebUI (if enabled) under *Plugins - Cryptocurrency*
 
-Check the configuration with `./ePiframe.py --check-config` (in the ePiframe folder).
+Check the configuration with `./ePiframe.py check-config` (in the ePiframe folder).
 
 The plugin folder name must stay a valid Python name (letters, digits, `_`), e.g. `cryptocurrency_ePiframe`: ePiframe
 skips plugins in folders with dashes or dots.
